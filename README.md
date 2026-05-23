@@ -1,6 +1,6 @@
 # spleece
 
-Unofficial web client for browsing, previewing, and downloading Splice sounds. No account required.
+Unofficial web client for browsing, previewing, and downloading Splice sounds for free.
 
 ## Usage
 
