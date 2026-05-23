@@ -1,0 +1,44 @@
+<svg
+  width="170"
+  height="170"
+  viewBox="0 0 170 170"
+  role="img"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <g transform="translate(56,85)">
+    
+    <g transform="skewX(10)">
+      <rect
+        x="0"
+        y="-26"
+        width="14"
+        height="52"
+        rx="3"
+        fill="#CECBF6"
+      />
+    </g>
+
+    <g transform="translate(22,0) skewX(10)">
+      <rect
+        x="0"
+        y="-38"
+        width="14"
+        height="76"
+        rx="3"
+        fill="#7F77DD"
+      />
+    </g>
+
+    <g transform="translate(44,0) skewX(10)">
+      <rect
+        x="0"
+        y="-30"
+        width="14"
+        height="60"
+        rx="3"
+        fill="#534AB7"
+      />
+    </g>
+
+  </g>
+</svg>
