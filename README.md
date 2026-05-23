@@ -22,6 +22,13 @@ npm run dev
 - Download as WAV or original format
 - Dark/light theme
 
+## Features to add
+
+- Tauri app
+- Drap and drop
+- Make amount of samples in packs not limit to 50
+
 ## Screenshots
 
-<img width="1680" height="918" alt="image" src="https://github.com/user-attachments/assets/890fc2d5-fbcc-48ae-9bee-6ce3bcfba399" />
+<img width="1680" height="918" alt="screenshot of main page of spleece with the user searching 'kick' while getting samples of kicks for songs" src="https://github.com/user-attachments/assets/890fc2d5-fbcc-48ae-9bee-6ce3bcfba399" />
+<img width="1680" height="918" alt="screenshot of a pack called 'Godspeed - Hip Hop & Rnb Cuts' featuring its description, its tags (rnb) and samples." src="https://github.com/user-attachments/assets/83f0c97c-b58b-4040-ba29-6643a1fff90d" />
