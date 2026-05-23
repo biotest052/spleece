@@ -21,3 +21,7 @@ npm run dev
 - Preview samples with waveform visualization
 - Download as WAV or original format
 - Dark/light theme
+
+## Screenshots
+
+<img width="1680" height="3295" alt="image" src="https://github.com/user-attachments/assets/5bbbefe1-6f16-42a7-8c37-9cbb422db166" />
