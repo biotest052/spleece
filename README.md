@@ -27,6 +27,7 @@ npm run dev
 - Tauri app
 - Drap and drop
 - Make amount of samples in packs not limit to 50
+- A global instance instead of locally hosting
 
 ## Screenshots
 
