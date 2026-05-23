@@ -32,3 +32,4 @@ npm run dev
 
 <img width="1680" height="918" alt="screenshot of main page of spleece with the user searching 'kick' while getting samples of kicks for songs" src="https://github.com/user-attachments/assets/890fc2d5-fbcc-48ae-9bee-6ce3bcfba399" />
 <img width="1680" height="918" alt="screenshot of a pack called 'Godspeed - Hip Hop & Rnb Cuts' featuring its description, its tags (rnb) and samples." src="https://github.com/user-attachments/assets/83f0c97c-b58b-4040-ba29-6643a1fff90d" />
+<img width="1680" height="918" alt="screenshot of the settings page for spleece, current tab is on 'Appearance'" src="https://github.com/user-attachments/assets/963608c6-8f48-48aa-89f0-99541c6ceec0" />
