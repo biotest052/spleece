@@ -1,6 +1,6 @@
 # spleece
 
-Unofficial web client for browsing, previewing, and downloading Splice sounds. No account required.
+Unofficial web client for browsing, previewing, and downloading Splice sounds for free.
 
 ## Usage
 
@@ -27,6 +27,7 @@ npm run dev
 - Tauri app
 - Drap and drop
 - Make amount of samples in packs not limit to 50
+- A global instance instead of locally hosting
 
 ## Screenshots
 
