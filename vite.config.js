@@ -2,6 +2,8 @@ import { defineConfig } from 'vite'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import { resolve } from 'path'
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 const USER_AGENTS = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15',
@@ -112,20 +114,17 @@ function graphqlProxyMiddleware(req, res) {
 }
 
 export default defineConfig({
-  plugins: [
-    svelte(),
-    {
-      name: 'proxy-audio',
-      configureServer(server) {
-        server.middlewares.use('/api/proxy', audioProxyMiddleware);
-        server.middlewares.use('/graphql', graphqlProxyMiddleware);
-      },
-      configurePreviewServer(server) {
-        server.middlewares.use('/api/proxy', audioProxyMiddleware);
-        server.middlewares.use('/graphql', graphqlProxyMiddleware);
-      },
+  plugins: [svelte(), {
+    name: 'proxy-audio',
+    configureServer(server) {
+      server.middlewares.use('/api/proxy', audioProxyMiddleware);
+      server.middlewares.use('/graphql', graphqlProxyMiddleware);
     },
-  ],
+    configurePreviewServer(server) {
+      server.middlewares.use('/api/proxy', audioProxyMiddleware);
+      server.middlewares.use('/graphql', graphqlProxyMiddleware);
+    },
+  }, cloudflare()],
   resolve: {
     alias: {
       '$lib': resolve(__dirname, 'src/lib'),
