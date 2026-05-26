@@ -42,6 +42,30 @@
   let currentView = $state('downloads');
   let settingsSection = $state('appearance');
 
+  let favorites = $state(loadFavorites());
+
+  function loadFavorites() {
+    try {
+      const raw = localStorage.getItem('spleece-favorites');
+      const arr = raw ? JSON.parse(raw) : [];
+      const map = {};
+      for (const s of arr) map[s.uuid] = s;
+      return map;
+    } catch { return {}; }
+  }
+
+  function saveFavorites(map) {
+    localStorage.setItem('spleece-favorites', JSON.stringify(Object.values(map)));
+  }
+
+  function toggleFavorite(sample) {
+    const map = { ...favorites };
+    if (map[sample.uuid]) delete map[sample.uuid];
+    else map[sample.uuid] = sample;
+    favorites = map;
+    saveFavorites(map);
+  }
+
   let showFilters = $state(false);
   let filterKey = $state('');
   let filterChord = $state('');
@@ -591,7 +615,7 @@
 <div class="app-shell">
   <Topbar
     {currentView}
-    onNavigate={(view) => { if (view === 'downloads') closePack(); currentView = view; }}
+    onNavigate={(view) => { stopPreview(); if (view !== 'downloads') closePack(); currentView = view; }}
     onHome={() => (closePack(), currentView = 'downloads')}
   />
 
@@ -608,10 +632,12 @@
           waveLoading={waveLoading}
           sampleErrors={sampleErrors}
           dlStatus={dlStatus}
+          favoriteMap={favorites}
           onClose={closePack}
           onTogglePreview={togglePreview}
           onDownload={download}
           onGenWaveform={genWaveform}
+          onToggleFavorite={toggleFavorite}
         />
       {:else}
         <SearchArea
@@ -668,10 +694,12 @@
                   waveLoading={waveLoading[sample.uuid]}
                   sampleError={sampleErrors[sample.uuid]}
                   dlStatus={dlStatus}
+                  favorited={!!favorites[sample.uuid]}
                   onTogglePreview={togglePreview}
                   onDownload={download}
                   onOpenPack={(s) => openPack(extractPack(s.pack))}
                   onGenWaveform={genWaveform}
+                  onToggleFavorite={toggleFavorite}
                 />
               {/each}
             </div>
@@ -687,6 +715,38 @@
         {:else if hasSearched && !loading}
           <div class="empty"><p>no results</p></div>
         {/if}
+      {/if}
+
+    {:else if currentView === 'favourites'}
+      {#if error}
+        <div class="error">{error}</div>
+      {/if}
+      {#if loading}
+        <div class="loading">searching&hellip;</div>
+      {/if}
+      {@const favSamples = Object.values(favorites)}
+      {#if favSamples.length > 0}
+        <div class="results">
+          {#each favSamples as sample (sample.uuid)}
+            <SampleRow
+              sample={sample}
+              playingId={playingId}
+              playingProgress={playingProgress}
+              waveData={waveData[sample.uuid]}
+              waveLoading={waveLoading[sample.uuid]}
+              sampleError={sampleErrors[sample.uuid]}
+              dlStatus={dlStatus}
+              favorited={!!favorites[sample.uuid]}
+              onTogglePreview={togglePreview}
+              onDownload={download}
+              onOpenPack={(s) => openPack(extractPack(s.pack))}
+              onGenWaveform={genWaveform}
+              onToggleFavorite={toggleFavorite}
+            />
+          {/each}
+        </div>
+      {:else if !loading}
+        <div class="empty"><p>no favourite samples yet</p></div>
       {/if}
 
     {:else if currentView === 'settings'}

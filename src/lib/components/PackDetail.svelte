@@ -1,5 +1,5 @@
 <script>
-  import { ArrowLeft, Package, Play, Pause, Download, LoaderCircle } from '@lucide/svelte';
+  import { ArrowLeft, Package, Play, Pause, Download, LoaderCircle, Heart } from '@lucide/svelte';
   import ContextMenu from './ContextMenu.svelte';
   import { proxyUrl, formatBpm, formatKey, formatDuration } from '$lib/splice.js';
 
@@ -12,10 +12,12 @@
   export let waveLoading = {};
   export let sampleErrors = {};
   export let dlStatus = { uuid: null };
+  export let favoriteMap = {};
   export let onClose;
   export let onTogglePreview;
   export let onDownload;
   export let onGenWaveform;
+  export let onToggleFavorite;
 
   function fileName(s) {
     return s.name.split('/').pop();
@@ -58,7 +60,7 @@
   <div class="pack-samples-count">{samples.length} samples</div>
   <div class="results">
     {#each samples as sample}
-      <ContextMenu {sample}>
+      <ContextMenu {sample} favorited={!!favoriteMap[sample.uuid]} onToggleFavorite={onToggleFavorite}>
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="row"
@@ -123,6 +125,13 @@
             disabled={dlStatus.uuid === sample.uuid}
           >
             <Download size={14} />
+          </button>
+          <button
+            class="fav-btn"
+            title={favoriteMap[sample.uuid] ? 'Remove from favourites' : 'Add to favourites'}
+            onclick={() => onToggleFavorite?.(sample)}
+          >
+            <Heart size={14} fill={favoriteMap[sample.uuid] ? 'var(--accent)' : 'none'} color={favoriteMap[sample.uuid] ? 'var(--accent)' : 'var(--text3)'} />
           </button>
         </div>
       </ContextMenu>

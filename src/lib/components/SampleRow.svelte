@@ -1,5 +1,5 @@
 <script>
-  import { Play, Pause, Download, Package } from '@lucide/svelte';
+  import { Play, Pause, Download, Package, Heart } from '@lucide/svelte';
   import Waveform from './Waveform.svelte';
   import ContextMenu from './ContextMenu.svelte';
   import { proxyUrl, formatBpm, formatKey, formatDuration } from '$lib/splice.js';
@@ -11,17 +11,19 @@
   export let waveLoading = false;
   export let sampleError = null;
   export let dlStatus = { uuid: null };
+  export let favorited = false;
   export let onTogglePreview;
   export let onDownload;
   export let onOpenPack;
   export let onGenWaveform;
+  export let onToggleFavorite;
 
   function fileName(s) {
     return s.name.split('/').pop();
   }
 </script>
 
-<ContextMenu {sample}>
+<ContextMenu {sample} {favorited} {onToggleFavorite}>
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="row"
@@ -81,13 +83,20 @@
         <Play size={10} />
       {/if}
     </button>
-    <button
-      class="dl-btn"
-      title="Click to download"
-      onclick={() => onDownload?.(sample)}
-      disabled={dlStatus.uuid === sample.uuid}
-    >
-      <Download size={14} />
-    </button>
-  </div>
+  <button
+    class="dl-btn"
+    title="Click to download"
+    onclick={() => onDownload?.(sample)}
+    disabled={dlStatus.uuid === sample.uuid}
+  >
+    <Download size={14} />
+  </button>
+  <button
+    class="fav-btn"
+    title={favorited ? 'Remove from favourites' : 'Add to favourites'}
+    onclick={() => onToggleFavorite?.(sample)}
+  >
+    <Heart size={14} fill={favorited ? 'var(--accent)' : 'none'} color={favorited ? 'var(--accent)' : 'var(--text3)'} />
+  </button>
+</div>
 </ContextMenu>

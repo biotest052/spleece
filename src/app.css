@@ -180,7 +180,7 @@ body {
 
 .row {
   display: grid;
-  grid-template-columns: 32px minmax(190px, 1fr) 58px minmax(130px, 180px) 32px 32px;
+  grid-template-columns: 32px minmax(190px, 1fr) 58px minmax(130px, 180px) 32px 32px 32px;
   align-items: center; gap: 10px; min-height: 56px; padding: 7px 8px;
   border-bottom: 1px solid var(--border); border-radius: 10px;
   transition: background 0.1s; font-size: 13px;
@@ -231,6 +231,13 @@ body {
 }
 .dl-btn:hover:not(:disabled) { color: #102116; background: var(--accent2); }
 .dl-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.fav-btn {
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  border: none; border-radius: 10px; background: var(--bg2); color: var(--text3);
+  cursor: pointer; transition: color 0.15s, background 0.15s; flex-shrink: 0;
+}
+.fav-btn:hover { color: var(--accent); background: var(--bg2); }
 
 .load-more-wrap { text-align: center; padding: 18px 0 8px; }
 .load-more {
@@ -407,7 +414,7 @@ body {
   .search-header h1 { font-size: 21px; }
   .search-box input { font-size: 15px; line-height: 42px; }
   .search-box button { width: 44px; height: 42px; }
-  .row { grid-template-columns: 32px 1fr 32px; gap: 6px; font-size: 12px; }
+  .row { grid-template-columns: 32px 1fr 32px 32px; gap: 6px; font-size: 12px; }
   .row .col-meta, .row .col-wave-group, .row .col-pack-thumb { display: none; }
   .settings-layout { flex-direction: column; }
   .settings-nav { flex-direction: row; min-width: auto; }

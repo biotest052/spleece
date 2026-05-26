@@ -1,5 +1,5 @@
 <script>
-  import { Download, Settings } from '@lucide/svelte';
+  import { Download, Settings, Heart } from '@lucide/svelte';
 
   export let currentView = 'downloads';
   export let onNavigate;
@@ -16,6 +16,10 @@
     <button class:active={currentView === 'downloads'} onclick={() => onNavigate?.('downloads')}>
       <Download size={16} />
       <span>save</span>
+    </button>
+    <button class:active={currentView === 'favourites'} onclick={() => onNavigate?.('favourites')}>
+      <Heart size={16} />
+      <span>faves</span>
     </button>
     <button class:active={currentView === 'settings'} onclick={() => onNavigate?.('settings')}>
       <Settings size={16} />

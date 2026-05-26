@@ -1,7 +1,7 @@
 <script>
-  import { Link } from '@lucide/svelte';
+  import { Link, Heart } from '@lucide/svelte';
 
-  let { sample, children } = $props();
+  let { sample, children, favorited = false, onToggleFavorite } = $props();
 
   let show = $state(false);
   let x = $state(0);
@@ -15,8 +15,16 @@
     show = true;
   }
 
+  function slugify(name) {
+    return name
+      .replace(/\.[^.]+$/, '')
+      .replace(/[^a-zA-Z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .toLowerCase();
+  }
+
   async function copyLink() {
-    const url = `https://splice.com/samples/${sample.uuid}`;
+    const url = `https://splice.com/sounds/sample/${sample.uuid.replace(/-/g, '')}/${slugify(sample.name)}`;
     try {
       await navigator.clipboard.writeText(url);
     } catch {
@@ -69,10 +77,17 @@
     style="left: {x}px; top: {y}px;"
     bind:this={menuEl}
     role="menu"
+    tabindex="-1"
+    onclick={(e) => e.stopPropagation()}
+    onkeydown={(e) => e.stopPropagation()}
   >
     <button class="context-menu-item" onclick={copyLink} role="menuitem">
       <Link size={14} />
       Copy Link
+    </button>
+    <button class="context-menu-item" onclick={() => { onToggleFavorite?.(sample); show = false; }} role="menuitem">
+      <Heart size={14} fill={favorited ? 'var(--accent)' : 'none'} color={favorited ? 'var(--accent)' : undefined} />
+      {favorited ? 'Unfavourite' : 'Favourite'}
     </button>
   </div>
 {/if}
