@@ -180,7 +180,7 @@ body {
 
 .row {
   display: grid;
-  grid-template-columns: 32px minmax(190px, 1fr) 70px 72px 58px minmax(130px, 180px) 32px 32px;
+  grid-template-columns: 32px minmax(190px, 1fr) 58px minmax(130px, 180px) 32px 32px;
   align-items: center; gap: 10px; min-height: 56px; padding: 7px 8px;
   border-bottom: 1px solid var(--border); border-radius: 10px;
   transition: background 0.1s; font-size: 13px;
@@ -204,6 +204,9 @@ body {
 }
 .sample-tags { display: flex; gap: 6px; margin-top: 3px; overflow: hidden; white-space: nowrap; }
 .sample-tags span { color: var(--text4); font-size: 11px; }
+.sample-tags .tag { background: var(--surface); padding: 1px 7px; border-radius: 10px; color: var(--text2); }
+.sample-badge { display: inline-flex; align-items: center; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 600; background: var(--tag-bg); color: var(--text2); }
+.sample-badge--bpm { background: var(--accent); }
 
 .col-pack-thumb {
   width: 30px; height: 30px; flex-shrink: 0;
