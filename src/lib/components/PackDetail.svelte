@@ -13,11 +13,14 @@
   export let sampleErrors = {};
   export let dlStatus = { uuid: null };
   export let favoriteMap = {};
+  export let page = 1;
+  export let totalPages = 1;
   export let onClose;
   export let onTogglePreview;
   export let onDownload;
   export let onGenWaveform;
   export let onToggleFavorite;
+  export let onGoToPage;
 
   function fileName(s) {
     return s.name.split('/').pop();
@@ -40,7 +43,16 @@
       {/if}
     </div>
     <div class="pack-details">
-      <h2>{pack.name}</h2>
+      <div class="pack-details-top">
+        <h2>{pack.name}</h2>
+        <button
+          class="pack-detail-fav-btn"
+          title={favoriteMap[pack.uuid] ? 'Remove from favourites' : 'Add to favourites'}
+          onclick={() => onToggleFavorite?.(pack)}
+        >
+          <Heart size={16} fill={favoriteMap[pack.uuid] ? 'var(--accent)' : 'none'} color={favoriteMap[pack.uuid] ? 'var(--accent)' : 'var(--text3)'} />
+        </button>
+      </div>
       {#if pack.provider}
         <span class="pack-provider">{pack.provider.name}</span>
       {/if}
@@ -137,6 +149,41 @@
       </ContextMenu>
     {/each}
   </div>
+  {#if totalPages > 1}
+    <div class="pagination">
+      <button class="page-btn" disabled={page <= 1} onclick={() => onGoToPage(page - 1)}>Prev</button>
+      {#each Array(totalPages) as _, i}
+        <button
+          class="page-btn"
+          class:active={i + 1 === page}
+          disabled={i + 1 === page}
+          onclick={() => onGoToPage(i + 1)}
+        >{i + 1}</button>
+      {/each}
+      <button class="page-btn" disabled={page >= totalPages} onclick={() => onGoToPage(page + 1)}>Next</button>
+    </div>
+  {/if}
 {:else}
   <div class="empty"><p>no samples in this pack</p></div>
 {/if}
+
+<style>
+  .pack-details-top { display: flex; align-items: center; gap: 8px; }
+  .pack-details-top h2 { flex: 1; }
+  .pack-detail-fav-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; border: none; border-radius: 8px;
+    background: transparent; color: var(--text3); cursor: pointer; flex-shrink: 0;
+    transition: color 0.15s, background 0.15s;
+  }
+  .pack-detail-fav-btn:hover { background: var(--tag-bg); color: var(--accent); }
+  .pagination { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 16px; padding: 0 4px; }
+  .page-btn {
+    min-width: 34px; height: 34px; border: none; border-radius: 8px;
+    background: var(--surface); color: var(--text3); cursor: pointer;
+    font-size: 13px; transition: 0.15s;
+  }
+  .page-btn:hover:not(:disabled) { background: var(--bg2); color: var(--text); }
+  .page-btn.active { background: var(--accent); color: #241b13; font-weight: 600; }
+  .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+</style>

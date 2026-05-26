@@ -250,7 +250,14 @@ body {
 
 .empty { text-align: center; padding: 60px 20px; color: var(--text4); font-size: 13px; }
 
-.pack-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin-top: 14px; padding: 0 4px; }
+.pack-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px;   margin-top: 14px; padding: 0 4px; }
+
+.fav-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.fav-tabs button {
+  padding: 6px 14px; border: none; border-radius: 8px; background: var(--surface);
+  color: var(--text3); cursor: pointer; transition: 0.15s; font-size: 13px;
+}
+.fav-tabs button.active { background: var(--accent); color: #241b13; font-weight: 600; }
 
 .pack-card {
   display: flex;

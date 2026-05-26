@@ -43,6 +43,7 @@
   let settingsSection = $state('appearance');
 
   let favorites = $state(loadFavorites());
+  let favType = $state('sample');
 
   function loadFavorites() {
     try {
@@ -58,10 +59,10 @@
     localStorage.setItem('spleece-favorites', JSON.stringify(Object.values(map)));
   }
 
-  function toggleFavorite(sample) {
+  function toggleFavorite(item) {
     const map = { ...favorites };
-    if (map[sample.uuid]) delete map[sample.uuid];
-    else map[sample.uuid] = sample;
+    if (map[item.uuid]) delete map[item.uuid];
+    else map[item.uuid] = { ...item, _type: item.assetType || 'sample' };
     favorites = map;
     saveFavorites(map);
   }
@@ -79,6 +80,8 @@
   let viewingPack = $state(null);
   let packSamples = $state([]);
   let packLoading = $state(false);
+  let packPage = $state(1);
+  let packTotalPages = $state(1);
 
   function toggleTheme(isDark) {
     dark = isDark;
@@ -636,6 +639,8 @@
     viewingPack = pack;
     packLoading = true;
     packSamples = [];
+    packPage = 1;
+    packTotalPages = 1;
     try {
       const result = await searchSamples('', {
         assetType: 'sample',
@@ -644,7 +649,31 @@
         order: 'DESC',
       });
       packSamples = result.items;
+      packPage = result.page || 1;
+      packTotalPages = result.totalPages || 1;
       prefetchAudio(packSamples);
+    } catch (e) {
+      error = e.message || 'Failed to load pack samples';
+    } finally {
+      packLoading = false;
+    }
+  }
+
+  async function goToPackPage(page) {
+    if (packLoading || !viewingPack || page < 1 || page > packTotalPages) return;
+    packLoading = true;
+    try {
+      const result = await searchSamples('', {
+        assetType: 'sample',
+        parentAssetUuid: viewingPack.uuid,
+        sort: 'popularity',
+        order: 'DESC',
+        page,
+      });
+      packSamples = result.items;
+      packPage = result.page || page;
+      packTotalPages = result.totalPages || packTotalPages;
+      prefetchAudio(result.items);
     } catch (e) {
       error = e.message || 'Failed to load pack samples';
     } finally {
@@ -689,11 +718,14 @@
           sampleErrors={sampleErrors}
           dlStatus={dlStatus}
           favoriteMap={favorites}
+          page={packPage}
+          totalPages={packTotalPages}
           onClose={closePack}
           onTogglePreview={togglePreview}
           onDownload={download}
           onGenWaveform={genWaveform}
           onToggleFavorite={toggleFavorite}
+          onGoToPage={goToPackPage}
         />
       {:else}
         <SearchArea
@@ -740,7 +772,9 @@
                 <PackCard
                   pack={pack}
                   sampleCount={sampleCount(pack)}
+                  favorited={!!favorites[pack.uuid]}
                   onClick={openPack}
+                  onToggleFavorite={toggleFavorite}
                 />
               {/each}
             </div>
@@ -758,7 +792,7 @@
                   favorited={!!favorites[sample.uuid]}
                   onTogglePreview={togglePreview}
                   onDownload={download}
-                  onOpenPack={(s) => openPack(extractPack(s.pack))}
+                  onOpenPack={(s) => { openPack(extractPack(s.pack)); currentView = 'downloads'; }}
                   onGenWaveform={genWaveform}
                   onToggleFavorite={toggleFavorite}
                 />
@@ -785,29 +819,51 @@
       {#if loading}
         <div class="loading">searching&hellip;</div>
       {/if}
-      {@const favSamples = Object.values(favorites)}
-      {#if favSamples.length > 0}
-        <div class="results">
-          {#each favSamples as sample (sample.uuid)}
-            <SampleRow
-              sample={sample}
-              playingId={playingId}
-              playingProgress={playingProgress}
-              waveData={waveData[sample.uuid]}
-              waveLoading={waveLoading[sample.uuid]}
-              sampleError={sampleErrors[sample.uuid]}
-              dlStatus={dlStatus}
-              favorited={!!favorites[sample.uuid]}
-              onTogglePreview={togglePreview}
-              onDownload={download}
-              onOpenPack={(s) => openPack(extractPack(s.pack))}
-              onGenWaveform={genWaveform}
-              onToggleFavorite={toggleFavorite}
-            />
-          {/each}
-        </div>
-      {:else if !loading}
-        <div class="empty"><p>no favourite samples yet</p></div>
+      <div class="fav-tabs">
+        <button class:active={favType === 'sample'} onclick={() => favType = 'sample'}>Samples</button>
+        <button class:active={favType === 'pack'} onclick={() => favType = 'pack'}>Packs</button>
+      </div>
+      {#if favType === 'sample'}
+        {@const favSamples = Object.values(favorites).filter(f => (f._type || 'sample') === 'sample')}
+        {#if favSamples.length > 0}
+          <div class="results">
+            {#each favSamples as sample (sample.uuid)}
+              <SampleRow
+                sample={sample}
+                playingId={playingId}
+                playingProgress={playingProgress}
+                waveData={waveData[sample.uuid]}
+                waveLoading={waveLoading[sample.uuid]}
+                sampleError={sampleErrors[sample.uuid]}
+                dlStatus={dlStatus}
+                favorited={!!favorites[sample.uuid]}
+                onTogglePreview={togglePreview}
+                onDownload={download}
+                onOpenPack={(s) => { openPack(extractPack(s.pack)); currentView = 'downloads'; }}
+                onToggleFavorite={toggleFavorite}
+              />
+            {/each}
+          </div>
+        {:else if !loading}
+          <div class="empty"><p>no favourite samples yet</p></div>
+        {/if}
+      {:else}
+        {@const favPacks = Object.values(favorites).filter(f => f._type === 'pack')}
+        {#if favPacks.length > 0}
+          <div class="pack-grid">
+            {#each favPacks as fav (fav.uuid)}
+              <PackCard
+                pack={fav}
+                sampleCount={fav.sampleCount ?? '?'}
+                favorited={!!favorites[fav.uuid]}
+                onClick={(p) => { openPack(p); currentView = 'downloads'; }}
+                onToggleFavorite={toggleFavorite}
+              />
+            {/each}
+          </div>
+        {:else if !loading}
+          <div class="empty"><p>no favourite packs yet</p></div>
+        {/if}
       {/if}
 
     {:else if currentView === 'settings'}
