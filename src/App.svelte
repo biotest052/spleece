@@ -1,6 +1,6 @@
 <script>
   import { unscramble, wavEncode } from './lib/unscramble.js';
-  import { searchSamples, proxyUrl, looksLikeChallenge, extractPack } from './lib/splice.js';
+  import { fetchPackByPermalink, searchSamples, proxyUrl, looksLikeChallenge, extractPack } from './lib/splice.js';
   import Topbar from './lib/components/Topbar.svelte';
   import SearchArea from './lib/components/SearchArea.svelte';
   import SampleRow from './lib/components/SampleRow.svelte';
@@ -83,6 +83,118 @@
   let packPage = $state(1);
   let packTotalPages = $state(1);
 
+  let initializing = true;
+
+  function syncUrl() {
+    if (initializing) return;
+    const url = new URL(window.location.href);
+    if (currentView === 'downloads' && viewingPack?.permalink) {
+      url.pathname = `/pack/${viewingPack.permalink}`;
+      url.search = '';
+      if (packPage > 1) url.searchParams.set('p', String(packPage));
+    } else if (currentView === 'favourites') {
+      url.pathname = '/favourites';
+      url.search = '';
+    } else if (currentView === 'settings') {
+      url.pathname = '/settings';
+      url.search = '';
+    } else {
+      url.pathname = '/';
+      url.search = '';
+      if (search) url.searchParams.set('s', search);
+      if (selectedTags.length) url.searchParams.set('t', selectedTags.join(','));
+      if (currentPage > 1) url.searchParams.set('p', String(currentPage));
+      url.searchParams.set('ty', assetType);
+      if (filterKey) url.searchParams.set('k', filterKey);
+      if (filterChord) url.searchParams.set('ch', filterChord);
+      if (filterMinBpm) url.searchParams.set('mb', filterMinBpm);
+      if (filterMaxBpm) url.searchParams.set('xB', filterMaxBpm);
+      if (filterCategory) url.searchParams.set('ca', filterCategory);
+      if (filterSort !== 'popularity') url.searchParams.set('so', filterSort);
+    }
+    history.replaceState(null, '', url.toString());
+  }
+
+  function handlePopState() {
+    const url = new URL(window.location.href);
+    const path = url.pathname.replace(/\/+$/, '') || '/';
+    if (path.startsWith('/pack/')) {
+      loadPackByPermalink(path.replace('/pack/', ''), parseInt(url.searchParams.get('p')) || 1);
+    } else if (path === '/favourites') {
+      currentView = 'favourites';
+    } else if (path === '/settings') {
+      currentView = 'settings';
+    } else {
+      const s = url.searchParams.get('s') || '';
+      const ty = url.searchParams.get('ty') || 'sample';
+      const t = url.searchParams.get('t') || '';
+      const p = parseInt(url.searchParams.get('p')) || 1;
+      search = s; assetType = ty;
+      selectedTags = t ? t.split(',') : [];
+      filterKey = url.searchParams.get('k') || '';
+      filterChord = url.searchParams.get('ch') || '';
+      filterMinBpm = url.searchParams.get('mb') || '';
+      filterMaxBpm = url.searchParams.get('xB') || '';
+      filterCategory = url.searchParams.get('ca') || '';
+      filterSort = url.searchParams.get('so') || 'popularity';
+      viewingPack = null;
+      if (s || t) doSearch(p);
+      else { samples = []; hasSearched = false; currentPage = 1; }
+    }
+  }
+
+  async function loadPackByPermalink(slug, page = 1) {
+    try {
+      const pack = await fetchPackByPermalink(slug);
+      if (!pack) { error = 'Pack not found'; currentView = 'downloads'; return; }
+      currentView = 'downloads';
+      viewingPack = pack;
+      packLoading = true; packSamples = []; packPage = 1; packTotalPages = 1;
+      const result = await searchSamples('', {
+        assetType: 'sample', parentAssetUuid: pack.uuid,
+        sort: 'popularity', order: 'DESC', page,
+      });
+      packSamples = result.items; packPage = result.page || page;
+      packTotalPages = result.totalPages || 1;
+      prefetchAudio(packSamples);
+    } catch (e) { error = e.message || 'Failed to load pack'; }
+    finally { packLoading = false; }
+  }
+
+  const initUrl = new URL(window.location.href);
+  const initPath = initUrl.pathname.replace(/\/+$/, '') || '/';
+  if (initPath.startsWith('/pack/')) {
+    currentView = 'downloads';
+    loadPackByPermalink(initPath.replace('/pack/', ''), parseInt(initUrl.searchParams.get('p')) || 1);
+  } else if (initPath === '/favourites') {
+    currentView = 'favourites';
+  } else if (initPath === '/settings') {
+    currentView = 'settings';
+  } else {
+    const s = initUrl.searchParams.get('s') || '';
+    const ty = initUrl.searchParams.get('ty') || 'sample';
+    const t = initUrl.searchParams.get('t') || '';
+    const p = parseInt(initUrl.searchParams.get('p')) || 1;
+    const k = initUrl.searchParams.get('k') || '';
+    const ch = initUrl.searchParams.get('ch') || '';
+    const mb = initUrl.searchParams.get('mb') || '';
+    const xB = initUrl.searchParams.get('xB') || '';
+    const ca = initUrl.searchParams.get('ca') || '';
+    const so = initUrl.searchParams.get('so') || 'popularity';
+    search = s; assetType = ty; currentPage = p;
+    selectedTags = t ? t.split(',') : [];
+    filterKey = k; filterChord = ch; filterMinBpm = mb; filterMaxBpm = xB;
+    filterCategory = ca; filterSort = so;
+    if (s || t) doSearch(p);
+    else hasSearched = false;
+  }
+  initializing = false;
+  syncUrl();
+
+  $effect(() => { syncUrl(); });
+
+  if (typeof window !== 'undefined') window.addEventListener('popstate', handlePopState);
+
   function toggleTheme(isDark) {
     dark = isDark;
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
@@ -122,7 +234,7 @@
     doSearch();
   }
 
-  async function doSearch() {
+  async function doSearch(page = 1) {
     const q = search.trim();
     if (!q && !selectedTags.length && !anyFilterActive()) return;
     if (abortController) abortController.abort();
@@ -134,7 +246,7 @@
     error = '';
     loading = true;
     total = 0;
-    currentPage = 1;
+    currentPage = page;
     totalPages = 1;
     waveData = {};
     sampleErrors = {};
@@ -143,7 +255,7 @@
     try {
       const result = await searchSamples(q, {
         signal: abortController.signal,
-        page: 1,
+        page,
         tagUuids: selectedTags,
         key: filterKey || null,
         chordType: filterChord || null,

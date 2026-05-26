@@ -259,9 +259,11 @@ body {
 }
 .fav-tabs button.active { background: var(--accent); color: #241b13; font-weight: 600; }
 
+.pack-card-wrap { position: relative; display: flex; flex-direction: column; }
 .pack-card {
   display: flex;
   flex-direction: column;
+  flex: 1;
   border: 1px solid var(--border);
   border-radius: 10px;
   overflow: hidden;
@@ -278,6 +280,7 @@ body {
 .pack-card-artwork {
   width: 100%;
   aspect-ratio: 1;
+  flex-shrink: 0;
   background: var(--surface);
   display: flex;
   align-items: center;
@@ -301,6 +304,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  flex: 1;
 }
 .pack-card-name {
   font-size: 13px;
