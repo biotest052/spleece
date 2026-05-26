@@ -379,7 +379,7 @@ body {
 .page-header { display: flex; align-items: center; gap: 10px; color: var(--text3); padding: 0 2px; }
 .page-header span { margin-left: auto; color: var(--text4); font-size: 11px; }
 .page-header h1 { font-size: 20px; font-weight: 750; color: var(--text); }
-.settings-layout { display: flex; gap: 24px; align-items: flex-start; }
+.settings-layout { display: flex; gap: 12px; align-items: flex-start; }
 .settings-nav { display: flex; flex-direction: column; gap: 4px; min-width: 138px; }
 .settings-section-btn {
   display: block; width: 100%; min-height: 36px; padding: 8px 12px; border: 1px solid transparent; border-radius: 10px;

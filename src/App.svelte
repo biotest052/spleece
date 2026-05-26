@@ -326,6 +326,38 @@
     });
   }
 
+  async function getCacheSize() {
+    const db = await openAudioCacheDb();
+    if (!db) return 0;
+    return new Promise((resolve) => {
+      const tx = db.transaction(CACHE_STORE, 'readonly');
+      const all = tx.objectStore(CACHE_STORE).getAll();
+      all.onsuccess = () => {
+        let total = 0;
+        for (const item of all.result) total += item.bytes?.byteLength || 0;
+        resolve(total);
+      };
+      all.onerror = () => resolve(0);
+      tx.oncomplete = () => db.close();
+      tx.onerror = () => db.close();
+    });
+  }
+
+  function getUserDataSize() {
+    let total = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      const val = localStorage.getItem(key);
+      total += (key?.length || 0) + (val?.length || 0);
+    }
+    return total;
+  }
+
+  function clearUserData() {
+    favorites = {};
+    localStorage.removeItem('spleece-favorites');
+  }
+
   function decodeAsText(bytes) {
     return new TextDecoder('utf-8', { fatal: false }).decode(bytes.slice(0, 800));
   }
@@ -517,6 +549,30 @@
     return ctx.decodeAudioData(bytes.buffer.slice(0));
   }
 
+  function trimStartSilence(audioBuffer, threshold = 0.001) {
+    const ch = audioBuffer.numberOfChannels;
+    const len = audioBuffer.length;
+    let firstNonSilent = 0;
+    for (let i = 0; i < len; i++) {
+      let maxAmp = 0;
+      for (let c = 0; c < ch; c++) {
+        const abs = Math.abs(audioBuffer.getChannelData(c)[i]);
+        if (abs > maxAmp) maxAmp = abs;
+      }
+      if (maxAmp > threshold) { firstNonSilent = i; break; }
+    }
+    if (firstNonSilent === 0) return audioBuffer;
+    const newLen = len - firstNonSilent;
+    const ctx = getDecodeCtx();
+    const trimmed = ctx.createBuffer(ch, newLen, audioBuffer.sampleRate);
+    for (let c = 0; c < ch; c++) {
+      const oldData = audioBuffer.getChannelData(c);
+      const newData = trimmed.getChannelData(c);
+      for (let i = 0; i < newLen; i++) newData[i] = oldData[i + firstNonSilent];
+    }
+    return trimmed;
+  }
+
   async function getDownloadSource(sample, usePreview) {
     if (usePreview) {
       return { bytes: await getAudioBuffer(sample.url), source: 'preview' };
@@ -544,12 +600,12 @@
     }
     if (isWav(bytes)) return { blob: new Blob([bytes], { type: 'audio/wav' }), ext: 'wav' };
     try {
-      const ab = await decodeAudioBytes(bytes);
+      const ab = trimStartSilence(await decodeAudioBytes(bytes));
       return { blob: new Blob([wavEncode(ab)], { type: 'audio/wav' }), ext: 'wav' };
     } catch (e) {
       if (source === 'preview') throw e;
       bytes = await getAudioBuffer(sample.url);
-      const ab = await decodeAudioBytes(bytes);
+      const ab = trimStartSilence(await decodeAudioBytes(bytes));
       return { blob: new Blob([wavEncode(ab)], { type: 'audio/wav' }), ext: 'wav' };
     }
   }
@@ -662,6 +718,11 @@
           onFilterChange={handleFilterChange}
           onClearFilters={clearFilters}
           onToggleTag={toggleTag}
+          onClearCache={clearAudioCache}
+          onClearUserData={clearUserData}
+          onClearBoth={() => { clearAudioCache(); clearUserData(); }}
+          {getCacheSize}
+          {getUserDataSize}
         />
 
         {#if error}

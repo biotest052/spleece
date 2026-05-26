@@ -1,28 +1,54 @@
 <script>
-  import { Search, LoaderCircle, SlidersHorizontal, X } from '@lucide/svelte';
+  import { Search, LoaderCircle, SlidersHorizontal, X, Trash2 } from '@lucide/svelte';
+  import ClearDataMenu from './ClearDataMenu.svelte';
   import { KEY_OPTIONS, CHORD_OPTIONS, CATEGORY_OPTIONS, SORT_OPTIONS } from '$lib/splice.js';
 
-  export let search = '';
-  export let loading = false;
-  export let total = 0;
-  export let assetType = 'sample';
-  export let showFilters = false;
-  export let filterKey = '';
-  export let filterChord = '';
-  export let filterMinBpm = '';
-  export let filterMaxBpm = '';
-  export let filterSort = 'popularity';
-  export let filterCategory = '';
-  export let tagSummary = [];
-  export let selectedTags = [];
-  export let anyFilterActive = false;
-  export let onSearch;
-  export let onInputChange;
-  export let onAssetTypeChange;
-  export let onToggleFilters;
-  export let onFilterChange;
-  export let onClearFilters;
-  export let onToggleTag;
+  let {
+    search = '',
+    loading = false,
+    total = 0,
+    assetType = 'sample',
+    showFilters = false,
+    filterKey = '',
+    filterChord = '',
+    filterMinBpm = '',
+    filterMaxBpm = '',
+    filterSort = 'popularity',
+    filterCategory = '',
+    tagSummary = [],
+    selectedTags = [],
+    anyFilterActive = false,
+    onSearch,
+    onInputChange,
+    onAssetTypeChange,
+    onToggleFilters,
+    onFilterChange,
+    onClearFilters,
+    onToggleTag,
+    onClearCache,
+    onClearUserData,
+    onClearBoth,
+    getCacheSize,
+    getUserDataSize,
+  } = $props();
+
+  let showClearMenu = $state(false);
+  let menuX = $state(0);
+  let menuY = $state(0);
+  let cacheSize = $state(0);
+  let userDataSize = $state(0);
+  let trashBtn;
+
+  async function openClearMenu() {
+    cacheSize = await getCacheSize?.();
+    userDataSize = getUserDataSize?.() || 0;
+    if (trashBtn) {
+      const r = trashBtn.getBoundingClientRect();
+      menuX = r.right;
+      menuY = r.top;
+    }
+    showClearMenu = true;
+  }
 </script>
 
 <div class="search-area">
@@ -59,9 +85,14 @@
         <span class="filter-badge">active</span>
       {/if}
     </button>
-    <div class="asset-type-tabs">
-      <button class:active={assetType === 'sample'} onclick={() => onAssetTypeChange?.('sample')}>Samples</button>
-      <button class:active={assetType === 'pack'} onclick={() => onAssetTypeChange?.('pack')}>Packs</button>
+    <div class="filter-toggle-right">
+      <div class="asset-type-tabs">
+        <button class:active={assetType === 'sample'} onclick={() => onAssetTypeChange?.('sample')}>Samples</button>
+        <button class:active={assetType === 'pack'} onclick={() => onAssetTypeChange?.('pack')}>Packs</button>
+      </div>
+      <button class="clear-data-btn" title="Clear data" onclick={openClearMenu} bind:this={trashBtn}>
+        <Trash2 size={15} />
+      </button>
     </div>
   </div>
 
@@ -129,3 +160,26 @@
     </div>
   {/if}
 </div>
+
+<ClearDataMenu
+  show={showClearMenu}
+  x={menuX}
+  y={menuY}
+  {cacheSize}
+  {userDataSize}
+  onClose={() => showClearMenu = false}
+  onClearCache={() => { onClearCache?.(); showClearMenu = false; }}
+  onClearUserData={() => { onClearUserData?.(); userDataSize = getUserDataSize?.() || 0; }}
+  onClearBoth={() => { onClearBoth?.(); cacheSize = 0; userDataSize = 0; showClearMenu = false; }}
+/>
+
+<style>
+  .filter-toggle-right { display: flex; align-items: center; gap: 10px; }
+  .clear-data-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border: none; border-radius: 8px;
+    background: transparent; color: var(--text3); cursor: pointer; flex-shrink: 0;
+    transition: color 0.15s, background 0.15s;
+  }
+  .clear-data-btn:hover { color: var(--err-text); background: var(--err-bg); }
+</style>
