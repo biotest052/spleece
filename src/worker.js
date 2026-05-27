@@ -79,7 +79,7 @@ async function handleAudioProxy(request) {
 
   const resp = await fetch(target, {
     headers: {
-      'Accept': 'audio/mpeg,audio/*;q=0.9,*/*;q=0.8',
+      'Accept': '*/*',
       'Origin': randomChoice(ORIGINS),
       'Referer': randomChoice(REFERERS),
       'User-Agent': randomChoice(USER_AGENTS),

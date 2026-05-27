@@ -54,11 +54,13 @@
       };
       const t = setTimeout(() => {
         document.addEventListener('click', close);
+        document.addEventListener('contextmenu', close);
         document.addEventListener('keydown', onKey);
       }, 0);
       return () => {
         clearTimeout(t);
         document.removeEventListener('click', close);
+        document.removeEventListener('contextmenu', close);
         document.removeEventListener('keydown', onKey);
       };
     }
