@@ -30,6 +30,9 @@
     onClearBoth,
     getCacheSize,
     getUserDataSize,
+    suggestions = [],
+    suggestShow = false,
+    onSurprise,
   } = $props();
 
   let showClearMenu = $state(false);
@@ -38,6 +41,16 @@
   let cacheSize = $state(0);
   let userDataSize = $state(0);
   let trashBtn;
+  let searchAreaEl;
+
+  $effect(() => {
+    if (!suggestShow) return;
+    function close(e) {
+      if (searchAreaEl && !searchAreaEl.contains(e.target)) suggestShow = false;
+    }
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  });
 
   async function openClearMenu() {
     cacheSize = await getCacheSize?.();
@@ -51,7 +64,7 @@
   }
 </script>
 
-<div class="search-area">
+<div class="search-area" bind:this={searchAreaEl}>
   <div class="search-header">
     <h1>splice sounds</h1>
     <span>{total > 0 ? `${total} ${assetType === 'pack' ? 'pack' : 'sample'}${total !== 1 ? 's' : ''}` : 'search, preview, save'}</span>
@@ -64,13 +77,20 @@
       oninput={(e) => onInputChange?.(e.target.value)}
       onkeydown={(e) => e.key === 'Enter' && onSearch?.()}
     />
-    <button onclick={onSearch} disabled={loading}>
+    <button onclick={() => onSearch?.()} disabled={loading}>
       {#if loading}
         <LoaderCircle size={18} class="spin" />
       {:else}
         <Search size={18} />
       {/if}
     </button>
+    {#if suggestShow && suggestions.length > 0}
+      <div class="suggest-dropdown">
+        {#each suggestions as s}
+          <button class="suggest-item" onclick={() => { onInputChange?.(s); onSearch?.(); }}>{s}</button>
+        {/each}
+      </div>
+    {/if}
   </div>
 
   <div class="filter-toggle">
@@ -86,6 +106,7 @@
       {/if}
     </button>
     <div class="filter-toggle-right">
+      <button class="surprise-btn" onclick={onSurprise} title="Surprise me">Surprise me</button>
       <div class="asset-type-tabs">
         <button class:active={assetType === 'sample'} onclick={() => onAssetTypeChange?.('sample')}>Samples</button>
         <button class:active={assetType === 'pack'} onclick={() => onAssetTypeChange?.('pack')}>Packs</button>
@@ -182,4 +203,20 @@
     transition: color 0.15s, background 0.15s;
   }
   .clear-data-btn:hover { color: var(--err-text); background: var(--err-bg); }
+  .surprise-btn {
+    padding: 6px 14px; border: none; border-radius: 8px; background: var(--surface);
+    color: var(--text3); cursor: pointer; font-size: 13px; transition: 0.15s;
+  }
+  .surprise-btn:hover { background: var(--accent); color: #241b13; }
+  .suggest-dropdown {
+    position: absolute; z-index: 100; top: 100%; left: 0; right: 0;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    margin-top: 2px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .suggest-item {
+    display: block; width: 100%; padding: 8px 12px; border: none;
+    background: none; color: var(--text); font-size: 13px; text-align: left;
+    cursor: pointer; transition: 0.1s;
+  }
+  .suggest-item:hover { background: var(--tag-bg); color: var(--text); }
 </style>

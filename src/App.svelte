@@ -1,12 +1,13 @@
 <script>
   import { unscramble, wavEncode } from './lib/unscramble.js';
-  import { fetchPackByPermalink, searchSamples, proxyUrl, looksLikeChallenge, extractPack } from './lib/splice.js';
+  import { fetchPackByPermalink, searchSamples, searchAutocomplete, proxyUrl, looksLikeChallenge, extractPack, RANDOM_TERMS } from './lib/splice.js';
   import Topbar from './lib/components/Topbar.svelte';
   import SearchArea from './lib/components/SearchArea.svelte';
   import SampleRow from './lib/components/SampleRow.svelte';
   import PackCard from './lib/components/PackCard.svelte';
   import PackDetail from './lib/components/PackDetail.svelte';
   import SettingsPage from './lib/components/SettingsPage.svelte';
+  import { Clock, Download, CheckCircle, CircleX } from '@lucide/svelte';
 
   let search = $state('');
   let samples = $state([]);
@@ -44,6 +45,11 @@
 
   let favorites = $state(loadFavorites());
   let favType = $state('sample');
+  let focusIndex = $state(-1);
+  let dlQueue = $state([]);
+  let stats = $state(loadStats());
+  let suggestions = $state([]);
+  let suggestShow = $state(false);
 
   function loadFavorites() {
     try {
@@ -62,7 +68,7 @@
   function toggleFavorite(item) {
     const map = { ...favorites };
     if (map[item.uuid]) delete map[item.uuid];
-    else map[item.uuid] = { ...item, _type: item.assetType || 'sample' };
+    else map[item.uuid] = { ...item, _type: item.assetType || (item.sampleCount !== undefined ? 'pack' : item.pack ? 'sample' : assetType) };
     favorites = map;
     saveFavorites(map);
   }
@@ -76,6 +82,60 @@
   let filterOrder = $state('DESC');
   let filterCategory = $state('');
   let assetType = $state('sample');
+
+  function loadStats() {
+    try { return JSON.parse(localStorage.getItem('spleece-stats') || '{}'); }
+    catch { return {}; }
+  }
+  function saveStats(s) { localStorage.setItem('spleece-stats', JSON.stringify(s)); }
+  function trackStat(uuid, field) {
+    const s = { ...stats };
+    if (!s[uuid]) s[uuid] = { plays: 0, downloads: 0 };
+    s[uuid][field] += 1;
+    stats = s;
+    saveStats(s);
+  }
+  function randomDiscovery() {
+    const term = RANDOM_TERMS[Math.floor(Math.random() * RANDOM_TERMS.length)];
+    search = term;
+    assetType = 'sample';
+    doSearch();
+  }
+  function handleKeydown(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+    if (e.key === 'j' || e.key === 'k') {
+      e.preventDefault();
+      const list = viewingPack ? packSamples : samples;
+      if (!list.length) return;
+      const delta = e.key === 'j' ? 1 : -1;
+      let idx = Math.max(0, Math.min(list.length - 1, (focusIndex < 0 ? -1 : focusIndex) + delta));
+      focusIndex = idx;
+    }
+    if (e.key === ' ' && focusIndex >= 0) {
+      e.preventDefault();
+      const list = viewingPack ? packSamples : samples;
+      const s = list[focusIndex];
+      if (s) togglePreview(s);
+    }
+  }
+  function addToDlQueue(sample) {
+    if (dlQueue.find(d => d.uuid === sample.uuid)) return;
+    dlQueue = [...dlQueue, { ...sample, status: 'queued', progress: 0 }];
+    processDlQueue();
+  }
+  async function processDlQueue() {
+    const next = dlQueue.find(d => d.status === 'queued');
+    if (!next) return;
+    dlQueue = dlQueue.map(d => d.uuid === next.uuid ? { ...d, status: 'downloading' } : d);
+    try {
+      await download(next);
+      dlQueue = dlQueue.map(d => d.uuid === next.uuid ? { ...d, status: 'done' } : d);
+      trackStat(next.uuid, 'downloads');
+    } catch {
+      dlQueue = dlQueue.map(d => d.uuid === next.uuid ? { ...d, status: 'failed' } : d);
+    }
+    processDlQueue();
+  }
 
   let viewingPack = $state(null);
   let packSamples = $state([]);
@@ -193,7 +253,13 @@
 
   $effect(() => { syncUrl(); });
 
-  if (typeof window !== 'undefined') window.addEventListener('popstate', handlePopState);
+  if (typeof window !== 'undefined') {
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('keydown', handleKeydown);
+  }
+
+  $effect(() => { if (samples.length) focusIndex = -1; });
+  $effect(() => { if (packSamples.length) focusIndex = -1; });
 
   function toggleTheme(isDark) {
     dark = isDark;
@@ -235,6 +301,7 @@
   }
 
   async function doSearch(page = 1) {
+    closeSuggest();
     const q = search.trim();
     if (!q && !selectedTags.length && !anyFilterActive()) return;
     if (abortController) abortController.abort();
@@ -615,6 +682,7 @@
       sourceNode = src;
       playingId = sample.uuid;
       playingDuration = buf.duration;
+      trackStat(sample.uuid, 'plays');
       const startTime = playCtx.currentTime;
       const rafUpdate = () => {
         if (playingId !== sample.uuid) return;
@@ -804,14 +872,26 @@
     return c ? c.count : '?';
   }
 
+  let suggestTimer;
+
   function handleSearchInput(value) {
     search = value;
+    clearTimeout(suggestTimer);
+    if (value.trim().length < 1) { suggestions = []; suggestShow = false; return; }
+    suggestTimer = setTimeout(async () => {
+      const results = await searchAutocomplete(value.trim());
+      suggestions = results;
+      suggestShow = results.length > 0;
+    }, 150);
   }
+
+  function closeSuggest() { suggestShow = false; }
 </script>
 
 <div class="app-shell">
   <Topbar
     {currentView}
+    dlCount={dlQueue.filter(d => d.status !== 'done').length}
     onNavigate={(view) => { stopPreview(); if (view !== 'downloads') closePack(); currentView = view; }}
     onHome={() => (closePack(), currentView = 'downloads')}
   />
@@ -834,10 +914,9 @@
           totalPages={packTotalPages}
           onClose={closePack}
           onTogglePreview={togglePreview}
-          onDownload={download}
+          onDownload={(s) => addToDlQueue(s)}
           onGenWaveform={genWaveform}
           onToggleFavorite={toggleFavorite}
-          onGoToPage={goToPackPage}
         />
       {:else}
         <SearchArea
@@ -855,6 +934,8 @@
           tagSummary={tagSummary}
           selectedTags={selectedTags}
           anyFilterActive={anyFilterActive()}
+          suggestions={suggestions}
+          suggestShow={suggestShow}
           onSearch={doSearch}
           onInputChange={handleSearchInput}
           onAssetTypeChange={(type) => (assetType = type, doSearch())}
@@ -865,6 +946,7 @@
           onClearCache={clearAudioCache}
           onClearUserData={clearUserData}
           onClearBoth={() => { clearAudioCache(); clearUserData(); }}
+          onSurprise={() => { randomDiscovery(); closeSuggest(); }}
           {getCacheSize}
           {getUserDataSize}
         />
@@ -903,14 +985,13 @@
                   dlStatus={dlStatus}
                   favorited={!!favorites[sample.uuid]}
                   onTogglePreview={togglePreview}
-                  onDownload={download}
+                  onDownload={(s) => addToDlQueue(s)}
                   onOpenPack={(s) => { openPack(extractPack(s.pack)); currentView = 'downloads'; }}
                   onGenWaveform={genWaveform}
                   onToggleFavorite={toggleFavorite}
                 />
               {/each}
             </div>
-          {/if}
 
           {#if hadMore()}
             <div class="load-more-wrap">
@@ -919,9 +1000,30 @@
               </button>
             </div>
           {/if}
-        {:else if hasSearched && !loading}
+        {/if}
+      {:else if hasSearched && !loading}
           <div class="empty"><p>no results</p></div>
         {/if}
+      {/if}
+
+      {#if dlQueue.length > 0}
+        <div class="dl-queue">
+          <h3 class="dl-queue-header">Download Queue ({dlQueue.filter(d => d.status !== 'done').length} remaining)</h3>
+          <div class="dl-queue-list">
+            {#each dlQueue.slice(-20).reverse() as item}
+              <div class="dl-queue-item" class:done={item.status === 'done'} class:failed={item.status === 'failed'}>
+                <span class="dl-queue-name" title={item.sampleName || item.name}>{item.sampleName || item.name || item.uuid.slice(0, 8)}</span>
+                <span class="dl-queue-status">
+                  {#if item.status === 'queued'}<Clock size={14} />
+                  {:else if item.status === 'downloading'}<Download size={14} />
+                  {:else if item.status === 'done'}<CheckCircle size={14} />
+                  {:else if item.status === 'failed'}<CircleX size={14} />
+                  {/if}
+                </span>
+              </div>
+            {/each}
+          </div>
+        </div>
       {/if}
 
     {:else if currentView === 'favourites'}
@@ -950,7 +1052,7 @@
                 dlStatus={dlStatus}
                 favorited={!!favorites[sample.uuid]}
                 onTogglePreview={togglePreview}
-                onDownload={download}
+                onDownload={(s) => addToDlQueue(s)}
                 onOpenPack={(s) => { openPack(extractPack(s.pack)); currentView = 'downloads'; }}
                 onToggleFavorite={toggleFavorite}
               />
@@ -983,6 +1085,7 @@
         dark={dark}
         downloadFormat={downloadFormat}
         settingsSection={settingsSection}
+        stats={stats}
         onToggleTheme={toggleTheme}
         onFormatChange={(fmt) => downloadFormat = fmt}
         onClearCache={clearAudioCache}

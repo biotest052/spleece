@@ -99,7 +99,7 @@ body {
 .search-box {
   display: flex; gap: 8px; padding: 6px;
   border: 1px solid var(--border2); border-radius: 10px; background: transparent;
-  overflow: hidden; transition: border-color 0.15s, background 0.15s;
+  position: relative;
 }
 .search-box:focus-within { border-color: var(--accent); }
 .search-box input { flex: 1; min-width: 0; padding: 0 11px; border: none; background: transparent; color: var(--text); font-size: 17px; line-height: 44px; outline: none; font-weight: 650; }
@@ -433,3 +433,13 @@ body {
   .pack-info { flex-direction: column; align-items: flex-start; }
   .pack-artwork { width: 100px; height: 100px; }
 }
+
+.dl-queue { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 16px; }
+.dl-queue-header { font-size: 14px; font-weight: 600; margin: 0 0 8px; color: var(--text2); }
+.dl-queue-list { display: flex; flex-direction: column; gap: 4px; max-height: 200px; overflow-y: auto; }
+.dl-queue-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; border-radius: 6px; font-size: 12px; background: var(--surface); }
+.dl-queue-item.done { opacity: 0.5; }
+.dl-queue-item.failed { background: var(--err-bg); }
+.dl-queue-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+.dl-queue-status { flex-shrink: 0; }
+.setting-value { font-weight: 600; color: var(--accent); }

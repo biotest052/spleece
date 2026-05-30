@@ -9,6 +9,7 @@
   export let onFormatChange;
   export let onClearCache;
   export let onSectionChange;
+  export let stats = {};
 </script>
 
 <div class="page settings-page">
@@ -21,6 +22,7 @@
     <div class="settings-nav">
       <button class="settings-section-btn" class:active={settingsSection === 'appearance'} onclick={() => onSectionChange?.('appearance')}>Appearance</button>
       <button class="settings-section-btn" class:active={settingsSection === 'audio'} onclick={() => onSectionChange?.('audio')}>Audio</button>
+      <button class="settings-section-btn" class:active={settingsSection === 'stats'} onclick={() => onSectionChange?.('stats')}>Stats</button>
     </div>
     <div class="settings-controls">
       {#if settingsSection === 'appearance'}
@@ -44,6 +46,16 @@
           <div class="setting-options">
             <button class="setting-option" onclick={onClearCache}>Clear cache</button>
           </div>
+        </div>
+      {:else if settingsSection === 'stats'}
+        {@const entries = Object.entries(stats)}
+        <div class="setting-row">
+          <span class="setting-label">Samples played</span>
+          <span class="setting-value">{entries.reduce((s, [,v]) => s + (v.plays || 0), 0)}</span>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Samples downloaded</span>
+          <span class="setting-value">{entries.reduce((s, [,v]) => s + (v.downloads || 0), 0)}</span>
         </div>
       {/if}
     </div>

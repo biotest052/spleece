@@ -121,6 +121,27 @@ query SamplesSearch(
 }
 `;
 
+const AUTOCOMPLETE_QUERY = `
+query SoundsSearchAutocomplete($term: String!) {
+  soundsSearchSuggestions(searchTerm: $term, limit: 7, context: "marketplace") {
+    autocompleteUuid
+    results { autocompleteTerm termType length offset __typename }
+    __typename
+  }
+}`;
+
+export async function searchAutocomplete(term) {
+  const body = await graphqlFetch(AUTOCOMPLETE_QUERY, { term });
+  return body?.data?.soundsSearchSuggestions?.results?.map(r => r.autocompleteTerm) || [];
+}
+
+export const RANDOM_TERMS = [
+  'kick', 'snare', 'hihat', '808', 'drums', 'bass', 'lead', 'pad', 'pluck',
+  'vocal', 'fx', 'texture', 'ambient', 'dark', 'warm', 'glitch', 'groove',
+  'melody', 'arpeggio', 'chord', 'stutter', 'fill', 'rise', 'drop',
+  'acoustic', 'electric', 'analog', 'digital', 'cinematic', 'lo-fi',
+];
+
 const PACK_QUERY = `
 query PackByPermalink($permalink: String!) {
   pack: packAsset(permalink: $permalink) {
