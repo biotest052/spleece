@@ -29,6 +29,12 @@ npm run dev
 - Make amount of samples in packs not limit to 50
 - A global instance instead of locally hosting
 
+## All community instances currently running
+```
+spleece.biotest.dev
+spleece.lapis.codes
+```
+
 ## Screenshots
 
 <img width="1680" height="918" alt="screenshot of main page of spleece with the user searching 'kick' while getting samples of kicks for songs" src="https://github.com/user-attachments/assets/890fc2d5-fbcc-48ae-9bee-6ce3bcfba399" />
