@@ -21,6 +21,8 @@
   export let onGenWaveform;
   export let onToggleFavorite;
   export let onGoToPage;
+  export let zipLoading = false;
+  export let onDownloadAll;
 
   function fileName(s) {
     return s.name.split('/').pop();
@@ -69,7 +71,15 @@
 {#if loading}
   <div class="loading">loading samples&hellip;</div>
 {:else if samples.length}
-  <div class="pack-samples-count">{samples.length} samples</div>
+  <div class="pack-samples-count">
+    {samples.length} samples
+    <button class="zip-btn" onclick={onDownloadAll} disabled={zipLoading}>
+      {#if zipLoading}
+        <LoaderCircle size={14} class="spin" />
+      {/if}
+      Download All as ZIP
+    </button>
+  </div>
   <div class="results">
     {#each samples as sample}
       <ContextMenu {sample} favorited={!!favoriteMap[sample.uuid]} onToggleFavorite={onToggleFavorite}>
@@ -186,4 +196,12 @@
   .page-btn:hover:not(:disabled) { background: var(--bg2); color: var(--text); }
   .page-btn.active { background: var(--accent); color: #241b13; font-weight: 600; }
   .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .pack-samples-count { display: flex; align-items: center; gap: 12px; }
+  .zip-btn {
+    padding: 4px 12px; border: none; border-radius: 6px; background: var(--accent);
+    color: #241b13; font-size: 12px; font-weight: 600; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 4px; transition: 0.15s;
+  }
+  .zip-btn:hover:not(:disabled) { filter: brightness(1.1); }
+  .zip-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

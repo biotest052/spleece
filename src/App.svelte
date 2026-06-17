@@ -1,6 +1,6 @@
 <script>
   import { unscramble, wavEncode } from './lib/unscramble.js';
-  import { fetchPackByPermalink, searchSamples, searchAutocomplete, proxyUrl, looksLikeChallenge, extractPack, RANDOM_TERMS } from './lib/splice.js';
+  import { fetchPackByPermalink, searchSamples, searchAutocomplete, proxyUrl, looksLikeChallenge, extractPack, extractSample, RANDOM_TERMS } from './lib/splice.js';
   import Topbar from './lib/components/Topbar.svelte';
   import SearchArea from './lib/components/SearchArea.svelte';
   import SampleRow from './lib/components/SampleRow.svelte';
@@ -8,6 +8,7 @@
   import PackDetail from './lib/components/PackDetail.svelte';
   import SettingsPage from './lib/components/SettingsPage.svelte';
   import { Clock, Download, CheckCircle, CircleX } from '@lucide/svelte';
+  import JSZip from 'jszip';
 
   let search = $state('');
   let samples = $state([]);
@@ -50,6 +51,7 @@
   let stats = $state(loadStats());
   let suggestions = $state([]);
   let suggestShow = $state(false);
+  let zipLoading = $state(false);
 
   function loadFavorites() {
     try {
@@ -135,6 +137,35 @@
       dlQueue = dlQueue.map(d => d.uuid === next.uuid ? { ...d, status: 'failed' } : d);
     }
     processDlQueue();
+  }
+
+  async function downloadPackAsZip() {
+    if (!viewingPack || !packTotalPages) return;
+    zipLoading = true;
+    try {
+      const zip = new JSZip();
+      const folder = zip.folder(safeFileName(viewingPack.name));
+      for (let p = 1; p <= packTotalPages; p++) {
+        const page = p === packPage ? { items: packSamples } : await searchSamples('', {
+          assetType: 'sample', parentAssetUuid: viewingPack.uuid,
+          sort: 'popularity', order: 'DESC', page: p,
+        });
+        for (const raw of page.items) {
+          const sample = extractSample(raw);
+          if (!sample) continue;
+          const usePreview = !sample.downloadUrl || sample.downloadUrl === sample.url;
+          const bytes = usePreview ? await getAudioBuffer(sample.url) : await getRawBytes(sample.downloadUrl);
+          const ext = usePreview ? 'mp3' : 'wav';
+          const name = safeFileName(cleanBaseName(sample)) + '.' + ext;
+          folder.file(name, bytes);
+        }
+      }
+      const blob = await zip.generateAsync({ type: 'blob' });
+      saveBlob(blob, safeFileName(viewingPack.name) + '.zip');
+    } catch (e) {
+      console.error('Zip download failed:', e);
+    }
+    zipLoading = false;
   }
 
   let viewingPack = $state(null);
@@ -917,6 +948,8 @@
           onDownload={(s) => addToDlQueue(s)}
           onGenWaveform={genWaveform}
           onToggleFavorite={toggleFavorite}
+          zipLoading={zipLoading}
+          onDownloadAll={downloadPackAsZip}
         />
       {:else}
         <SearchArea
