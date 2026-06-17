@@ -1,6 +1,6 @@
 <script>
   import { unscramble, wavEncode } from './lib/unscramble.js';
-  import { fetchPackByPermalink, searchSamples, searchAutocomplete, proxyUrl, looksLikeChallenge, extractPack, extractSample, RANDOM_TERMS } from './lib/splice.js';
+  import { fetchPackByPermalink, searchSamples, searchAutocomplete, proxyUrl, looksLikeChallenge, extractPack, RANDOM_TERMS } from './lib/splice.js';
   import Topbar from './lib/components/Topbar.svelte';
   import SearchArea from './lib/components/SearchArea.svelte';
   import SampleRow from './lib/components/SampleRow.svelte';
@@ -150,8 +150,7 @@
           assetType: 'sample', parentAssetUuid: viewingPack.uuid,
           sort: 'popularity', order: 'DESC', page: p,
         });
-        for (const raw of page.items) {
-          const sample = extractSample(raw);
+        for (const sample of page.items) {
           if (!sample) continue;
           const usePreview = !sample.downloadUrl || sample.downloadUrl === sample.url;
           const bytes = usePreview ? await getAudioBuffer(sample.url) : await getRawBytes(sample.downloadUrl);
